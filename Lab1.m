@@ -3,9 +3,9 @@ clear all; close all;
 %% Assignment 1: Sine Wave
 f0 = 1.8e3; fs = 6e3;
 N = 1000;
-n = 0:1000000;
-% xn = sin(2*pi*f0*n./fs+pi/2);
-% sound(xn,fs);
+n = 0:100000;
+ xn = sin(2*pi*f0*n./fs+pi/2);
+ playsound(xn,fs);
 load('LPFlab1_1.mat');
 % fc = pi/3/2/pi*fs;
 % plotMagPhase(FTD((0:(length(lowPassFilter)-1)),lowPassFilter,N),N);
@@ -22,8 +22,8 @@ xn = sin(2*pi*f0*n./fs+pi/2);
 % SRD
 y1n = xn(1:3:end);
 % % D/A Converter
-% playsound(y1n,fs);
-% playsound(y1n,fs/3);
+ playsound(y1n,fs);
+ playsound(y1n,fs/3);
 
 
 %% Option 2
