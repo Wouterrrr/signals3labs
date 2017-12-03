@@ -56,7 +56,7 @@ n = linspace(0,length(xn)-1,1000);
 plot(n,gaussmf((n-10)*1/fs,[sig 0]));
 plot(n,gaussmf((n-10-3/8)*1/fs,[sig 0]))
 
-
+close all;
 %% Second option
 % polyPhase = LPF(1+M-k:M:end);
 % vn = [0 xn];
@@ -75,22 +75,27 @@ plot(n,gaussmf((n-10-3/8)*1/fs,[sig 0]))
 % n = linspace(0,length(xn)-1,1000);
 % plot(n,gaussmf((n-10)*1/fs,[sig 0]));
 % plot(n,gaussmf((n-10-3/8)*1/fs,[sig 0]))
-% 
+
+% clearvars -except M k;
 nh = -100000:100000;
 LPF = M./M.*sinc(nh./M);
-polyPhase = LPF(mod(-nh+5,8)==0);
-npoly = (nh(mod(-nh+5,8)==0)-5)/8;
+%polyPhase = LPF(mod(-nh+5,8)==0);
+polyPhase = LPF(1+M-k:M:end);
+%npoly = (nh(mod(-nh+5,8)==0)-5)/8;
 nx = -10:10;
-x = gaussmf(n*1/fs,[sig 0]);
-[ny,y] = convcool(nx,x,npoly,polyPhase);
+x = gaussmf(nx*1/fs,[sig 0]);
+y = conv(polyPhase,x);
+y = y((length(polyPhase)+1)/2-1:end);
+%[ny,y] = convcool(nx,x,npoly,polyPhase);
 close all;
 %plotting
-stem(ny,y);
+stem(0:(length(y)-1),y);
 hold on;
-%stem(nx,x);
+stem(0:(length(xn)-1),xn);
 n = linspace(0,length(xn)-1,1000);
-%plot(n,gaussmf((n-10)*1/fs,[sig 0]));
+plot(n,gaussmf((n-10)*1/fs,[sig 0]));
 plot(n,gaussmf((n-10-3/8)*1/fs,[sig 0]))
+xlim([0 30]);
 
 function [ ny, y ] = convcool(nx, x, nh, h  )
     y = conv(x,h);
