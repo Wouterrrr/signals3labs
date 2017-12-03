@@ -9,86 +9,73 @@ M = 8;
 k = 3;
 alpha = 0.0001;
 
-%pulse
+%definition of signal that needs to be shifted
 n = -N:N;
 xn = gaussmf(n*1/fs,[sig 0]);
-figure;
-stem(0:(length(xn)-1),xn);
 
+%Definition Low Pass Filter
+nh = -100000:100000;
+LPF = M./M.*sinc(nh./M);
+
+tic;
 %upsampling
 vn(1:M:(length(xn)*M)) = xn;
 n = -N:1/M:N;
-figure;
-stem(0:(length(vn)-1),vn);
 
 %delay
 vn = [zeros(1,k) vn];
 hold on;
-n = [n (N+1):(N+3)];
-stem(0:(length(vn)-1),vn);
 
-%Low Pass Filter
-LPF = [0 0];
-i = 0;
-while mod(length(LPF),2) == 0
-    LPF = fdesign.lowpass('Fp,Fst,Ap,Ast',0.99/M,1.01/M,0.1,0.001+alpha*i,'linear');
-    Hd = design(LPF,'equiripple');
-    LPF = Hd.Numerator;
-    i = i+1;
-end
-vn = 8*conv(vn,LPF);
+%Applying Low Pass Filter on original signal
+vn = conv(vn,LPF);
+
+%shift signal back to the left as compensation for the causal Low Pass
+%Filter, which introduced a delay of a few samples.
 vn = vn((length(LPF)+1)/2:end);
-
-figure;
-stem(0:(length(vn)-1),vn);
 
 %Downsampling
 yn = vn(1:M:end);
+originalMethodTime = toc;
 
-%plotting
-figure;
+%plots
+fig = figure('NumberTitle', 'off', 'Name', 'Assignment 7: Original Method');
 nplot = -N:(length(yn)-N-1);
 stem(0:(length(yn)-1),yn);
 hold on;
-n = -N:N;
 stem(0:(length(xn)-1),xn);
 n = linspace(0,length(xn)-1,1000);
 plot(n,gaussmf((n-10)*1/fs,[sig 0]));
 plot(n,gaussmf((n-10-3/8)*1/fs,[sig 0]))
+xlim([0 30]);
+xlabel('n');
+legend('shifted sampled signal', 'sampled signal', 'non-sampled signal', 'shifted non-sampled signal');
+grid on;
+saveas(fig,'Assignment7originalmethod.png');
 
-close all;
-%% Second option
-% polyPhase = LPF(1+M-k:M:end);
-% vn = [0 xn];
-% vn = 8*conv(vn,polyPhase);
-% yn = vn((length(polyPhase)+1)/2+1:end);
-% figure;
-% stem(yn);
-% 
-% %plotting
-% figure(6);
-% hold off;
-% stem(0:(length(yn)-1),yn);
-% hold on;
-% n = -N:N;
-% stem(0:(length(xn)-1),xn);
-% n = linspace(0,length(xn)-1,1000);
-% plot(n,gaussmf((n-10)*1/fs,[sig 0]));
-% plot(n,gaussmf((n-10-3/8)*1/fs,[sig 0]))
-
-% clearvars -except M k;
-nh = -100000:100000;
-LPF = M./M.*sinc(nh./M);
-%polyPhase = LPF(mod(-nh+5,8)==0);
-polyPhase = LPF(1+M-k:M:end);
-%npoly = (nh(mod(-nh+5,8)==0)-5)/8;
+%% Second option: PolyPhase
+%definition signal that has to be shifted
 nx = -10:10;
 x = gaussmf(nx*1/fs,[sig 0]);
+
+%definition of Low Pass Filter
+nh = -100000:100000;
+LPF = M./M.*sinc(nh./M);
+
+%calculation Mth polyPhase components
+polyPhase = LPF(1+M-k:M:end);
+
+tic;
+%Calculation of shifted version of signal
 y = conv(polyPhase,x);
+
+%because the filter is linear phase and causal, it causes a shift of a
+%certain amount of samples to the right. The compensation for this happens
+%here.
 y = y((length(polyPhase)+1)/2-1:end);
-%[ny,y] = convcool(nx,x,npoly,polyPhase);
-close all;
-%plotting
+polyPhaseMethodTime = toc;
+
+%plots
+fig = figure('NumberTitle', 'off', 'Name', 'Assignment 7: PolyPhase method');
 stem(0:(length(y)-1),y);
 hold on;
 stem(0:(length(xn)-1),xn);
@@ -96,8 +83,7 @@ n = linspace(0,length(xn)-1,1000);
 plot(n,gaussmf((n-10)*1/fs,[sig 0]));
 plot(n,gaussmf((n-10-3/8)*1/fs,[sig 0]))
 xlim([0 30]);
-
-function [ ny, y ] = convcool(nx, x, nh, h  )
-    y = conv(x,h);
-    ny = linspace(nx(1) + nh(1), length(y)+nx(1) + nh(1) - 1,length(y));
-end
+xlabel('n');
+legend('shifted sampled signal', 'sampled signal', 'non-sampled signal', 'shifted non-sampled signal');
+grid on;
+saveas(fig,'Assignment7polyphase.png');
