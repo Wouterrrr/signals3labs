@@ -133,7 +133,7 @@ ylabel('r_{xy}(l)');
 % be causal only. 
 
 %% Assignment 4: The channel
-clear all;
+clear all; close all;
 % a)
 % definition of h
 a = 2/5;
@@ -174,8 +174,12 @@ figure;stem(xn);
 
 %% Assignment 6: FIR solution using optimal filter design
 clear all; close all;
+Dmax = 9;
+% definition of h
+a = 2/5;
+hn = [0 a 1 a];
 % definition of signals s[n] and g[n]
-Varg = 1;
+Varg = 0;
 Vars = 1;
 sigma_g = sqrt(Varg);
 sigma_s = sqrt(Vars);
@@ -189,6 +193,7 @@ Rs(l==0) = sigma_s^2;
 % Calculations
 rx = [0 0 Rg 0 0] + 1.32*[0 0 Rs 0 0] + 0.8*[0 Rs 0 0 0] + ...
      + 4/25*[Rs 0 0 0 0] + 0.8*[0 0 0 Rs 0] + 4/25*[0 0 0 0 Rs]; 
+rx2 = conv(hn, fliplr(hn));
 l = -(L+2):(L+2);
 % plotting
 stem(l,rx);
@@ -214,14 +219,21 @@ end
 rs0 = sigma_s^2;
 a = 2/5;
 ldx = -2:10;
-for D = 0:9
-    rdx(D+1,:) = [zeros(1,D+1) a*rs0 rs0 a*rs0 zeros(1,13-3-(D+1))];
+n = -100:100;
+delta = zeros(1,length(n));
+delta(n==0) = 1;
+x = 0:(S-1);
+rdx = zeros(Dmax+1,S);
+for D = 0:Dmax
+    for l = x
+        rdx(D+1,x==l) = a*delta(n==l-D+1) + delta(n==l-D+2) + a*delta(n==l-D+3);
+        
+    end  
 end
-rdx = rdx(:,3:end);
 
 %calculation of optimum filter
-for D = 0:9
-   hopt(D+1,:) = (inv(Rx)*(rdx(D+1,:))')'; 
+for D = 0:Dmax
+   hopt(D+1,:) = (inv(Rx)*((rdx(D+1,:))'))'; 
 end
 
 % implementation of system
@@ -229,10 +241,44 @@ a = 2/5;
 Varg = 0.5;
 N = 10^4;
 hn = [0 a 1 a];
-sn = -1+2*randi([0 1],1,N);
-gn = normrnd(0,sqrt(Varg),1,N+length(hn)-1);
-xn = conv(sn,hn)+gn*0;
-shatn = conv(xn,hopt(1,:));
-fig = figure;
-stem(sn);hold on; stem(shatn);
+for D = 0:Dmax
+   wDn = conv(hn,hopt(D+1,:));
+   subplot(4,5,D+1);
+   stem(wDn);
+   hold on;
+end
 
+for D = 0:Dmax
+    MSE(D+1) = Vars - rdx(D+1,:)*hopt(D+1,:)';
+end
+
+fig = figure;
+n = -8:8;
+w_id = 5/2*2/3*( (-1/2).^(n+2).*Step(n+2) + (-2).^(n+2).*Step(-n -3) );
+for D = 0:Dmax
+   subplot(4,3,D+1);
+   stem(0:S-1,hopt(D+1,:));
+   %hold on;
+   %stem(n+D, w_id);
+   title(['D = ' num2str(D)]);
+   ylabel('');
+   xlabel('n');
+   grid on;
+end
+[ax2,h2]=suplabel('w_D[n]','y');
+saveas(fig,'Lab2Assigment6b1.png');
+
+fig=figure;
+for D = 0:Dmax
+   subplot(4,3,D+1);
+   stem(0:S+2,conv(hopt(D+1,:),hn));
+   title(['D = ' num2str(D)]);
+   xlabel('n');
+   grid on;
+end
+[ax2,h2]=suplabel('g_D[n] = h[n] * w_D[n]','y');
+
+saveas(fig,'Lab2Assigment6b2.png');
+function [ u ] = Step(n)
+    u = double(n >= 0);
+end
