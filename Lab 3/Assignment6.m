@@ -1,0 +1,69 @@
+clear all; close all;
+
+%% Parameters
+Tftst = 0.05;
+step = 25;
+sample = 4;
+
+%% Load data
+sawdata = load('sawdata.mat');
+oscsindata = load('oscsindata.mat');
+chirpdata = load('chirpdata.mat');
+birdsdata = load('birdsdata.mat');
+switch sample
+    case 1
+        x = birdsdata.birds;
+        Fs = birdsdata.Fsbirds; 
+    case 2
+        x = chirpdata.chirp;
+        Fs = chirpdata.Fschirp;
+    case 3
+        x = oscsindata.oscsin;
+        Fs = oscsindata.Fsoscsin;
+    case 4
+        x = sawdata.saw;
+        Fs = sawdata.Fssaw;
+    otherwise
+        assert(1==0, 'sample should be equal to 1,2,3 or 4');
+end
+
+sound(x,Fs);
+siz = size(x);
+if siz(1) == 1
+    x = x';
+end
+
+
+%% Calculate STFT
+% definition of window
+N = Tftst*Fs;
+wn = ones(N,1);
+
+% prepare signal
+L = length(x);
+x = [x; zeros(N-1,1)];
+
+%calculate actual STFT
+Nplotspectrum = 2000;
+assert(mod(Nplotspectrum,2) == 0, 'Nplotspectrum must be even.');
+for n = 1:step:L
+    w = [zeros(n-1,1); wn; zeros(L-1-(n-1),1)];
+    xtemp = w.*x;
+    xtemp = xtemp((n):(n+N-1));
+    out(floor(n/step)+1,:) = abs(fft(xtemp',Nplotspectrum));
+    waitbar(n/L);
+    
+end
+
+%% plotting
+theta = linspace(0,pi,Nplotspectrum/2+1);
+f = theta./2./pi.*Fs;
+t = (1:step:L).*(1/Fs)-1/Fs;
+[T,F] = meshgrid(t,f);
+
+
+out = out(:,1:(Nplotspectrum/2+1));
+mesh(T,F,out');
+xlabel('Time [s]');
+ylabel('Frequency [Hz]');
+view(2);

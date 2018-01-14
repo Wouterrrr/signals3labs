@@ -251,6 +251,13 @@ end
 for D = 0:Dmax
     MSE(D+1) = Vars - rdx(D+1,:)*hopt(D+1,:)';
 end
+fig = figure;
+stem(0:length(MSE)-1,20*log(MSE));
+xlabel('D');
+ylabel('MSE [dB]');
+grid on;
+saveas(fig,'Assignment6d.png');
+
 
 fig = figure;
 n = -8:8;
